@@ -131,8 +131,11 @@ if isfield(model,'genes')
     modelIrrev.genes = model.genes;
     genemtxtranspose = model.rxnGeneMat';
     modelIrrev.rxnGeneMat = genemtxtranspose(:,irrev2rev)';
-    modelIrrev.rules = model.rules(irrev2rev);
     modelIrrev.grRules = model.grRules(irrev2rev); %added to allow model reduction 18/02/2016 Agnieszka
 end
+if  isfield(model,'rules')
+    modelIrrev.rules = model.rules(irrev2rev);
+end
+
 modelIrrev.reversibleModel = false;
 

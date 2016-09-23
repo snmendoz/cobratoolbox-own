@@ -29,7 +29,9 @@ metabolicFields = fieldnames(model);
 metabolicFields = metabolicFields(foo);
 clear foo;
 for i = 1:length(metabolicFields)
-	model.(metabolicFields{i}) = model.(metabolicFields{i})(selMets);
+    if ~isempty(model.(metabolicFields{i}))
+        model.(metabolicFields{i}) = model.(metabolicFields{i})(selMets);
+    end
 end
 if (isfield(model,'b'))
     model.b = model.b(selMets);
