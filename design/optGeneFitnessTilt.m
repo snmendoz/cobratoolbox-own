@@ -23,7 +23,6 @@ val = zeros(1,popsize);
 for i = 1:popsize
     rxn_vector = rxn_vector_matrix(i,:);
     rxnList = rxnListInput(logical(rxn_vector));
-
     
     %see if we've done this before
     val_temp = memoize(rxn_vector);
@@ -53,15 +52,12 @@ for i = 1:popsize
  [modelKO] = augmentBOF(modelKO, targetRxn, .001);
  
  % find growthrate
-    if exist('LPBasis', 'var')
-        modelKO.LPBasis = LPBasis;
-    end
+    sol=optimizeCbModel(modelKO);
     
-    [slnKO, LPOUT] = solveCobraLPCPLEX(modelKO, 0,1);
-    LPBasis = LPOUT.LPBasis;
-    growthrate = slnKO.obj;
-    [tmp,tar_loc] = ismember(targetRxn,modelKO.rxns);
-    minProdAtSetGR = slnKO.full(tar_loc);
+    if isempty(sol.x); continue; end 
+    growthrate = sol.f;
+    [~,tar_loc] = ismember(targetRxn,modelKO.rxns);
+    minProdAtSetGR = sol.x(tar_loc);
     
     % check to ensure that GR is above a certain value
     if growthrate < .10

@@ -18,7 +18,7 @@ function [optGeneSol] = GetOptGeneSol(model, targetRxn, substrateRxn, generxnLis
 
 
 % writeDirect where the files should be saved
-writeDirect = 'C:\';
+writeDirect = [pwd '\'];
 
 optGeneSol = struct();
 % from user input

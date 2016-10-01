@@ -4,7 +4,7 @@ function [x, population, scores, optGeneSol] = optGene(model, targetRxn, substra
 % [x, population, scores, optGeneSol] = optGene(model, targetRxn, substrateRxn, generxnList, MaxKOs, population)
 %
 %INPTUS
-% mode          Model of reconstruction
+% model         Model of reconstruction
 % targetRxn     String name of reaction which is to be maximized.
 % generxnList   List of genes or rxns which can be knocked out.  The
 %               program will guess which of the two it is, based on the 
@@ -19,9 +19,12 @@ function [x, population, scores, optGeneSol] = optGene(model, targetRxn, substra
 %   population  Population of individuals.  Pass this back into optgene to
 %               continue simulating where you left off.
 %   scores      An array of scores
-%   optGeneSol  optGene solution strcture
+%   optGeneSol  optGene solution structure
 %
 % Jan Schellenberger and Adam Feist 04/08/08
+% Sebastian Mendoza 23/09/2016 - revision of code and functioning.
+% obsolete functions were updated; inputs, outputs and code descriptions 
+% were added thoughout the function; unused code was removed.
 
 % hash table for hashing results... faster than not using it.
 global HTABLE
@@ -59,7 +62,7 @@ crossovermutationRate = mutationRate*.2;  % the rate of mutation after a crossov
 CrossoverFraction = .80;    % Percentage of offspring created by crossing over (as opposed to mutation). 0.7 - 0.8 were found to generate the highest mean, but this can be adjusted.
 PopulationSize = [125 125 125 125]; % paper: it was found that an increase beyond 125 individuals did not improve the results significantly.
 Generations = 10000;    % paper: 5000.  maximum number of generations to perform
-TimeLimit =  3600*24*2;  % global time limit in seconds
+TimeLimit =  3600*1;  % global time limit in seconds
 StallTimeLimit = 3600*24*1;   % Stall time limit (terminate after this much time of not finding an improvement in fitness)
 StallGenLimit =  10000;       % terminate after this many generations of not finding an improvement
 PlotFcns =  {@gaplotscores, @gaplotbestf, @gaplotscorediversity, @gaplotstopping, @gaplotmutationdiversity}; % what to plot.
@@ -76,9 +79,9 @@ if nargin > 5
     InitialPopulation = double(population);
 end
 options = gaoptimset(                                   ...
-    'PopulationType', 'bitstring',                          ...
-    'CreationFcn', @lowmutationcreation,                    ...
-    'MutationFcn', {@mutationUniformEqual, mutationRate},   ...
+    'PopulationType', 'bitstring',                          ... % String describing the data type of the population. We use 'bitstring' because the individuals in the population have components that are 0 or 1.
+    'CreationFcn', @lowmutationcreation,                    ... % The function lowmutationcreation will generate the initial population
+    'MutationFcn', {@mutationUniformEqual, mutationRate},   ... % This function will generate mutation children. We will use a uniform mutation, i.e., the algorithm will select a fraction of the
     'PopulationSize', PopulationSize,                       ...
     'StallTimeLimit', StallTimeLimit,                       ...
     'TimeLimit', TimeLimit,                                 ...
@@ -117,7 +120,7 @@ return;
 %% Creation Function
 % generates initial warmup with much lower number of mutations (on average
 % one mutation per
-function [Population] = lowmutationcreation(GenomeLength,FitnessFcn,options)
+function [Population] = lowmutationcreation(GenomeLength,~,options)
 totalPopulation = sum(options.PopulationSize);
 initPopProvided = size(options.InitialPopulation,1);
 individualsToCreate = totalPopulation - initPopProvided;
@@ -136,7 +139,7 @@ return;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% mutation function %%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-function mutationChildren = mutationUniformEqual(parents,options,GenomeLength,FitnessFcn,state,thisScore,thisPopulation,mutationRate)
+function mutationChildren = mutationUniformEqual(parents,~,GenomeLength,~,~,~,thisPopulation,mutationRate)
 global MaxKnockOuts
 if(nargin < 8)
     mutationRate = 0.01; % default mutation rate
@@ -151,7 +154,7 @@ for i=1:length(parents)
     if MaxKnockOuts > 0
         while(sum(child(:))> MaxKnockOuts)
             ind2 = find(child);
-            removeindex = ind2(randint(1,1,length(ind2))+1);
+            removeindex = ind2(randi(length(ind2),1));
             child(removeindex) = 0;
         end
     end
@@ -161,7 +164,7 @@ for i=1:length(parents)
     if rand > .5 && kos > 1
         while(sum(child(:))>= kos)
             ind2 = find(child);
-            removeindex = ind2(randint(1,1,length(ind2))+1);
+            removeindex = ind2(randi(length(ind2),1));
             child(removeindex) = 0;
         end
     end
@@ -173,7 +176,28 @@ return;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% crossover function %%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function xoverKids  = crossoverCustom(parents,options,GenomeLength,FitnessFcn,unused,thisPopulation, mutationRate)
+function xoverKids  = crossoverCustom(parents,~,GenomeLength,~,~,thisPopulation, mutationRate)
+
+%% INPUTS
+
+% parents               A column double array of indices with respect to
+%                       size(thisPopulation,1), defininig parents which 
+%                       will generate offspring. 
+% GenomeLength          A double variable containg the number of candidate 
+%                       genes to be knocked out 
+% thisPopulation        A double matrix (binary) describing the presence (1)
+%                       or absence (0) of every candidate genes to be 
+%                       knocked out  in the parental population
+% mutationRate          A double variable containg the probability of a 
+%                       gene to mutate.
+
+%% OUTPUTS
+% xoverKids             A double matrix (binary) describing the presence (1)
+%                       or absence (0) of every candidate genes to be 
+%                       knocked out in the offpring population
+
+
+
 nKids = length(parents)/2;
 % Extract information about linear constraints
 % Allocate space for the kids
@@ -206,7 +230,7 @@ for i=1:nKids
     if MaxKnockOuts>0
         while(sum(xoverKids(i,:))> MaxKnockOuts)
             ind2 = find(xoverKids(i,:));
-            removeindex = ind2(randint(1,1,length(ind2))+1);
+            removeindex = ind2(randi(length(ind2),1));
             xoverKids(i,removeindex) = 0;
         end
     end

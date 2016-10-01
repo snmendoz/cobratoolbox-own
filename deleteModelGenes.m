@@ -82,8 +82,12 @@ if (all(isInModel))
         constrainRxn = false(length(rxnInd),1);
         % Figure out if any of the reaction states is changed
         for j = 1:length(rxnInd)
-            if (~eval(model.rules{rxnInd(j)}))
-                constrainRxn(j) = true;
+            if isfield(model,'rules') && ~isempty(find(cellfun(@isempty,strfind(model.rules,'x('))==0))
+                if (~eval(model.rules{rxnInd(j)}))
+                    constrainRxn(j) = true;
+                end
+            else
+                error('problem with rules field')
             end
         end
         % Constrain flux through the reactions associated with these genes
